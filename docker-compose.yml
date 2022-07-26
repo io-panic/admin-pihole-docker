@@ -1,0 +1,59 @@
+version: "3"
+
+# More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    hostname: pihole
+    domainname: ioleak.com
+    # For DHCP it is recommended to remove these ports and instead add: network_mode: "host"
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "67:67/udp" # Only required if you are using Pi-hole as your DHCP server
+      - "8080:80/tcp"
+    environment:
+      - TZ='America/Montreal'
+      - WEBPASSWORD=
+      - IPv6=false
+      - DHCP_IPv6=false
+      # REV_SERVER=false
+      # BLOCKING_ENABLED=true
+      # DHCP_ACTIVE=true
+      # DHCP_IPv6: false
+      # IPv6=false
+      - SKIPGRAVITYONBOOT=1
+    dns:
+      - 127.0.0.1
+      - 1.1.1.1
+      - 1.0.0.1
+    #sysctls:
+    #  - net.ipv6.conf.all.disable_ipv6=1
+    #  - net.ipv6.conf.default.disable_ipv6=1
+    # Volumes store your data between container upgrades
+    volumes:
+      - './pihole/etc-pihole:/etc/pihole'
+      - './pihole/etc-dnsmasq.d:/etc/dnsmasq.d'
+      - './pihole/var-log:/var/log/pihole'
+      # https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    cap_add:
+      - NET_ADMIN # Recommended but not required (DHCP needs NET_ADMIN)      
+    network_mode: host
+    restart: unless-stopped
+
+  cloudflared:
+    container_name: cloudflared
+    image: cloudflared:latest
+    ports:
+      - "5053:5053/tcp"
+    environment:
+      -  CF_LOCAL_ADDR=127.0.0.1
+    network_mode: host
+    #networks:
+    #    - pihole
+    restart: unless-stopped
+
+networks:
+  pihole:
+    driver: bridge
